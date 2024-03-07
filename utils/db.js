@@ -1,4 +1,4 @@
-const { MongoClient } = require('mongodb');
+import MongoClient from 'mongodb';
 
 
 class DBClient {
@@ -40,4 +40,4 @@ class DBClient {
 
 const dbClient = new DBClient();
 dbClient.connect();
-module.exports(dbClient);
+export default dbClient;
