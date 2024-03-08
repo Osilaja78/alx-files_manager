@@ -1,5 +1,4 @@
 import Bull from 'bull';
 
-const fileQueue = new Bull('fileQueue');
-
-module.exports = fileQueue;
+export const fileQueue = new Bull('fileQueue');
+export const userQueue = new Bull('userQueue');

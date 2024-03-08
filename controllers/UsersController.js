@@ -1,5 +1,7 @@
-import dbClient from "../utils/db";
 import sha1 from 'sha1';
+import dbClient from '../utils/db';
+import redisClient from '../utils/redis';
+import { userQueue } from '../utils/queue';
 
 class UsersController {
   static async postNew(req, res) {
@@ -15,25 +17,27 @@ class UsersController {
     const exitingEmail = await dbClient.db.collection('users').findOne({ email });
 
     if (exitingEmail) {
-      return res.status(400).send({ error: 'Already exist'})
+      return res.status(400).send({ error: 'Already exist' });
     }
 
-    const hashedPassword =  sha1(password);
+    const hashedPassword = sha1(password);
+
     try {
       const newUser = await dbClient.db.collection('users').insertOne(
-        { email, password: hashedPassword }
+        { email, password: hashedPassword },
       );
-      res.status(201).json({ email: email, id: newUser.insertedId });
+      await userQueue.add({ userId: newUser.insertedId });
+      return res.status(201).send({ email, id: newUser.insertedId });
     } catch (err) {
       console.error('Error creating user:', err);
-      res.status(500).send('Server error');
+      return res.status(500).send('Server error');
     }
   }
 
   static async getUserIdFromToken(req) {
     const token = req.headers['x-token'];
     if (!token) return null;
-  
+
     const userId = await redisClient.get(`auth_${token}`);
     return userId;
   }
@@ -42,7 +46,7 @@ class UsersController {
     try {
       const userId = await this.getUserIdFromToken(req);
       if (!userId) return res.status(401).send('Unauthorized');
-  
+
       const user = await dbClient.db.collection('users').findOne({ _id: userId });
       return res.status(200).send({ email: user.email, id: user._id });
     } catch (err) {
