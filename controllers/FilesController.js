@@ -1,6 +1,7 @@
 /* eslint-disable radix */
 import fs from 'fs';
 import { v4 as uuidv4 } from 'uuid';
+import mime from 'mime-types';
 import ObjectID from 'mongodb';
 import dbClient from '../utils/db';
 import UsersController from './UsersController';
@@ -132,6 +133,34 @@ class FilesController {
       return res.json(updateResult.value);
     } catch (err) {
       console.error('Error unpublishing file:', err);
+      return res.status(500).send('Server error');
+    }
+  }
+
+  static async getFile(req, res) {
+    try {
+      const userId = await UsersController.getUserIdFromToken(req);
+
+      const { fileId } = req.params;
+      const file = await dbClient.db.collection('files').findOne({ _id: new ObjectID(fileId) });
+      if (!file) return res.status(404).send('Not found');
+
+      // eslint-disable-next-line prefer-destructuring
+      const isPublic = file.isPublic;
+      const isOwner = userId && userId.toString() === file.userId.toString();
+      if (!isPublic && !isOwner) return res.status(404).send('Not found');
+
+      if (file.type === 'folder') return res.status(400).send('A folder doesn\'t have content');
+
+      const filePath = file.localPath;
+      const fileData = await fs.readFile(filePath);
+      const mimeType = mime.lookup(file.name);
+
+      res.contentType(mimeType);
+      return res.send(fileData);
+    } catch (err) {
+      console.error('Error retrieving file content:', err);
+      if (err.code === 'ENOENT') return res.status(404).send('Not found');
       return res.status(500).send('Server error');
     }
   }
