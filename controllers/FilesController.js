@@ -1,5 +1,7 @@
+/* eslint-disable radix */
 import fs from 'fs';
 import { v4 as uuidv4 } from 'uuid';
+import ObjectID from 'mongodb';
 import dbClient from '../utils/db';
 import UsersController from './UsersController';
 
@@ -49,6 +51,45 @@ class FilesController {
       return res.status(201).json(result.ops[0]);
     } catch (err) {
       console.error('Error uploading file:', err);
+      return res.status(500).send('Server error');
+    }
+  }
+
+  static async getShow(req, res) {
+    try {
+      const { id } = req.params;
+      const userId = await UsersController.getUserIdFromToken(req);
+      if (!userId) return res.status(401).send('Unauthorized');
+
+      const fileId = id;
+      const file = await dbClient.db.collection('files').findOne({ _id: new ObjectID(fileId) });
+      if (!file || file.userId.toString() !== userId) return res.status(404).send('Not found');
+
+      return res.json(file);
+    } catch (err) {
+      console.error('Error retrieving file:', err);
+      return res.status(500).send('Server error');
+    }
+  }
+
+  static async getIndex(req, res) {
+    try {
+      const userId = await UsersController.getUserIdFromToken(req);
+      if (!userId) return res.status(401).send('Unauthorized');
+
+      const parentId = req.query.parentId || '0';
+      const page = parseInt(req.query.page) || 0;
+
+      const pipeline = [
+        { $match: { userId: new ObjectID(userId), parentId } },
+        { $skip: page * 20 },
+        { $limit: 20 },
+      ];
+
+      const [files] = await dbClient.database.collection('files').aggregate(pipeline).toArray();
+      return res.json(files);
+    } catch (err) {
+      console.error('Error retrieving files:', err);
       return res.status(500).send('Server error');
     }
   }

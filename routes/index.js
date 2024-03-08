@@ -1,10 +1,10 @@
-import express from "express";
-import AppController from "../controllers/AppController";
-import UsersController from "../controllers/UsersController";
-import AuthController from "../controllers/AuthController";
-import FilesController from "../controllers/FilesController";
+import express from 'express';
+import AppController from '../controllers/AppController';
+import UsersController from '../controllers/UsersController';
+import AuthController from '../controllers/AuthController';
+import FilesController from '../controllers/FilesController';
 
-const routes = express.Router()
+const routes = express.Router();
 
 // App Controllers
 routes.get('/status', AppController.getStatus);
@@ -20,5 +20,7 @@ routes.get('/disconnect', AuthController.getDisconnect);
 
 // Files controller
 routes.post('/files', FilesController.postUpload);
+routes.get('/files/:id', FilesController.getShow);
+routes.get('/files', FilesController.getIndex);
 
 export default routes;
