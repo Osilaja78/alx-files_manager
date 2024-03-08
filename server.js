@@ -7,7 +7,7 @@ const PORT = process.env.PORT || 5000;
 app.use('/', routes);
 
 app.listen(PORT, () => {
-    console.log(`API available on localhost port ${PORT}`);
+    console.log(`Server running on localhost port ${PORT}`);
 });
 
 export default app;
