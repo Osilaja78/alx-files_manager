@@ -23,7 +23,7 @@ class DBClient {
   async nbUsers() {
     if (!this.isAlive()) return 0;
     try {
-      const usersCollection = this.database.collection('users');
+      const usersCollection = this.db.collection('users');
       const count = usersCollection.countDocuments();
       return count;
     } catch (err) {
@@ -34,7 +34,7 @@ class DBClient {
   async nbFiles() {
     if (!this.isAlive()) return 0;
     try {
-      const filesCollection = this.database.collection('files');
+      const filesCollection = this.db.collection('files');
       const count = filesCollection.countDocuments();
       return count;
     } catch (err) {
