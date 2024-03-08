@@ -5,6 +5,7 @@ import mime from 'mime-types';
 import ObjectID from 'mongodb';
 import dbClient from '../utils/db';
 import UsersController from './UsersController';
+import fileQueue from '../utils/queue';
 
 class FilesController {
   static async postUpload(req, res) {
@@ -49,6 +50,10 @@ class FilesController {
       };
 
       const result = await dbClient.db.collection('files').insertOne(newFile);
+
+      if (type === 'image') {
+        await fileQueue.add({ userId, fileId: result.ops[0]._id });
+      }
       return res.status(201).json(result.ops[0]);
     } catch (err) {
       console.error('Error uploading file:', err);
@@ -152,7 +157,13 @@ class FilesController {
 
       if (file.type === 'folder') return res.status(400).send('A folder doesn\'t have content');
 
-      const filePath = file.localPath;
+      const size = parseInt(req.query.size);
+      if (size && ![100, 250, 500].includes(size)) return res.status(400).send('Invalid size parameter');
+
+      const filePath = size
+        ? `${file.localPath}_${size}.jpg`
+        : file.localPath;
+
       const fileData = await fs.readFile(filePath);
       const mimeType = mime.lookup(file.name);
 
