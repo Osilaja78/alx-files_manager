@@ -93,6 +93,48 @@ class FilesController {
       return res.status(500).send('Server error');
     }
   }
+
+  static async putPublish(req, res) {
+    try {
+      const userId = await UsersController.getUserIdFromToken(req);
+      if (!userId) return res.status(401).send('Unauthorized');
+
+      const { id } = req.params;
+      const updateResult = await dbClient.db.collection('files').findOneAndUpdate(
+        { _id: new ObjectID(id), userId: new ObjectID(userId) },
+        { $set: { isPublic: true } },
+        { returnOriginal: false },
+      );
+
+      if (!updateResult.value) return res.status(404).send('Not found');
+
+      return res.json(updateResult.value);
+    } catch (err) {
+      console.error('Error publishing file:', err);
+      return res.status(500).send('Server error');
+    }
+  }
+
+  static async putUnpublish(req, res) {
+    try {
+      const userId = await UsersController.getUserIdFromToken(req);
+      if (!userId) return res.status(401).send('Unauthorized');
+
+      const { id } = req.params;
+      const updateResult = await dbClient.database.collection('files').findOneAndUpdate(
+        { _id: new ObjectID(id), userId: new ObjectID(userId) },
+        { $set: { isPublic: false } },
+        { returnOriginal: false },
+      );
+
+      if (!updateResult.value) return res.status(404).send('Not found');
+
+      return res.json(updateResult.value);
+    } catch (err) {
+      console.error('Error unpublishing file:', err);
+      return res.status(500).send('Server error');
+    }
+  }
 }
 
 export default FilesController;
