@@ -1,10 +1,13 @@
+/* eslint-disable import/no-extraneous-dependencies */
 import express from 'express';
+import bodyParser from 'body-parser';
 import AppController from '../controllers/AppController';
 import UsersController from '../controllers/UsersController';
 import AuthController from '../controllers/AuthController';
 import FilesController from '../controllers/FilesController';
 
 const routes = express.Router();
+routes.use(bodyParser.json());
 
 // App Controllers
 routes.get('/status', AppController.getStatus);
