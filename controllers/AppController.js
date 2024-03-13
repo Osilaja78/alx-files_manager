@@ -9,9 +9,9 @@ class AppController {
     res.status(200).send({ redis: isAlive, db: isDb });
   }
 
-  static getStats(_, res) {
-    const users = dbClient.nbUsers();
-    const files = dbClient.nbFiles();
+  static async getStats(_, res) {
+    const users = await dbClient.nbUsers();
+    const files = await dbClient.nbFiles();
 
     res.status(200).send({ users, files });
   }
