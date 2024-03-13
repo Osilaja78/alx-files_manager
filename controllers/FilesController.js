@@ -35,9 +35,9 @@ class FilesController {
       let localPath;
       if (type !== 'folder') {
         const folderPath = process.env.FOLDER_PATH || '/tmp/files_manager';
-        await fs.mkdir(folderPath, { recursive: true });
+        await fs.mkdir(folderPath, { recursive: true }, (err) => err && console.log(err));
         localPath = `${folderPath}/${uuidv4()}`;
-        await fs.writeFile(localPath, Buffer.from(data, 'base64'));
+        await fs.writeFile(localPath, Buffer.from(data, 'base64'), (err) => err && console.log(err));
       }
 
       const newFile = {
@@ -54,7 +54,14 @@ class FilesController {
       if (type === 'image') {
         await fileQueue.add({ userId, fileId: result.ops[0]._id });
       }
-      return res.status(201).json(result.ops[0]);
+      return res.status(201).send({
+        id: result.ops[0]._id,
+        userId: result.ops[0].userId,
+        name: result.ops[0].name,
+        type: result.ops[0].type,
+        isPublic: result.ops[0].isPublic,
+        parentId: result.ops[0].parentId,
+      });
     } catch (err) {
       console.error('Error uploading file:', err);
       return res.status(500).send('Server error');
