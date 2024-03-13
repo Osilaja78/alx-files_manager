@@ -11,7 +11,7 @@ class FilesController {
   static async postUpload(req, res) {
     try {
       const userId = await UsersController.getUserIdFromToken(req);
-      if (!userId) return res.status(401).send('Unauthorized');
+      if (!userId) return res.status(401).send({ error: 'Unauthorized' });
 
       const {
         name,
@@ -21,10 +21,10 @@ class FilesController {
         data,
       } = req.body;
 
-      if (!name) return res.status(400).send('Missing name');
+      if (!name) return res.status(400).send({ error: 'Missing name' });
       const acceptedTypes = ['folder', 'file', 'image'];
-      if (!type || !acceptedTypes.includes(type)) return res.status(400).send('Missing type');
-      if (type !== 'folder' && !data) return res.status(400).send('Missing data');
+      if (!type || !acceptedTypes.includes(type)) return res.status(400).send({ error: 'Missing type' });
+      if (type !== 'folder' && !data) return res.status(400).send({ error: 'Missing data' });
 
       if (parentId) {
         const parentFile = await dbClient.db.collection('files').findOne({ _id: parentId });
@@ -63,8 +63,7 @@ class FilesController {
         parentId: result.ops[0].parentId,
       });
     } catch (err) {
-      console.error('Error uploading file:', err);
-      return res.status(500).send('Server error');
+      return res.status(500).send({ error: 'Server error' });
     }
   }
 
@@ -72,23 +71,22 @@ class FilesController {
     try {
       const { id } = req.params;
       const userId = await UsersController.getUserIdFromToken(req);
-      if (!userId) return res.status(401).send('Unauthorized');
+      if (!userId) return res.status(401).send({ error: 'Unauthorized' });
 
       const fileId = id;
       const file = await dbClient.db.collection('files').findOne({ _id: new ObjectID(fileId) });
-      if (!file || file.userId.toString() !== userId) return res.status(404).send('Not found');
+      if (!file || file.userId.toString() !== userId) return res.status(404).send({ error: 'Not found' });
 
       return res.json(file);
     } catch (err) {
-      console.error('Error retrieving file:', err);
-      return res.status(500).send('Server error');
+      return res.status(500).send({ error: 'Server error' });
     }
   }
 
   static async getIndex(req, res) {
     try {
       const userId = await UsersController.getUserIdFromToken(req);
-      if (!userId) return res.status(401).send('Unauthorized');
+      if (!userId) return res.status(401).send({ error: 'Unauthorized' });
 
       const parentId = req.query.parentId || '0';
       const page = parseInt(req.query.page) || 0;
@@ -102,15 +100,14 @@ class FilesController {
       const [files] = await dbClient.database.collection('files').aggregate(pipeline).toArray();
       return res.json(files);
     } catch (err) {
-      console.error('Error retrieving files:', err);
-      return res.status(500).send('Server error');
+      return res.status(500).send({ error: 'Server error' });
     }
   }
 
   static async putPublish(req, res) {
     try {
       const userId = await UsersController.getUserIdFromToken(req);
-      if (!userId) return res.status(401).send('Unauthorized');
+      if (!userId) return res.status(401).send({ error: 'Unauthorized' });
 
       const { id } = req.params;
       const updateResult = await dbClient.db.collection('files').findOneAndUpdate(
@@ -119,19 +116,18 @@ class FilesController {
         { returnOriginal: false },
       );
 
-      if (!updateResult.value) return res.status(404).send('Not found');
+      if (!updateResult.value) return res.status(404).send({ error: 'Not found' });
 
       return res.json(updateResult.value);
     } catch (err) {
-      console.error('Error publishing file:', err);
-      return res.status(500).send('Server error');
+      return res.status(500).send({ error: 'Server error' });
     }
   }
 
   static async putUnpublish(req, res) {
     try {
       const userId = await UsersController.getUserIdFromToken(req);
-      if (!userId) return res.status(401).send('Unauthorized');
+      if (!userId) return res.status(401).send({ error: 'Unauthorized' });
 
       const { id } = req.params;
       const updateResult = await dbClient.database.collection('files').findOneAndUpdate(
@@ -140,12 +136,12 @@ class FilesController {
         { returnOriginal: false },
       );
 
-      if (!updateResult.value) return res.status(404).send('Not found');
+      if (!updateResult.value) return res.status(404).send({ error: 'Not found' });
 
       return res.json(updateResult.value);
     } catch (err) {
       console.error('Error unpublishing file:', err);
-      return res.status(500).send('Server error');
+      return res.status(500).send({ error: 'Server error' });
     }
   }
 
@@ -155,17 +151,17 @@ class FilesController {
 
       const { fileId } = req.params;
       const file = await dbClient.db.collection('files').findOne({ _id: new ObjectID(fileId) });
-      if (!file) return res.status(404).send('Not found');
+      if (!file) return res.status(404).send({ error: 'Not found' });
 
       // eslint-disable-next-line prefer-destructuring
       const isPublic = file.isPublic;
       const isOwner = userId && userId.toString() === file.userId.toString();
-      if (!isPublic && !isOwner) return res.status(404).send('Not found');
+      if (!isPublic && !isOwner) return res.status(404).send({ error: 'Not found' });
 
-      if (file.type === 'folder') return res.status(400).send('A folder doesn\'t have content');
+      if (file.type === 'folder') return res.status(400).send({ error: 'A folder doesn\'t have content' });
 
       const size = parseInt(req.query.size);
-      if (size && ![100, 250, 500].includes(size)) return res.status(400).send('Invalid size parameter');
+      if (size && ![100, 250, 500].includes(size)) return res.status(400).send({ error: 'Invalid size parameter' });
 
       const filePath = size
         ? `${file.localPath}_${size}.jpg`
@@ -177,9 +173,8 @@ class FilesController {
       res.contentType(mimeType);
       return res.send(fileData);
     } catch (err) {
-      console.error('Error retrieving file content:', err);
-      if (err.code === 'ENOENT') return res.status(404).send('Not found');
-      return res.status(500).send('Server error');
+      if (err.code === 'ENOENT') return res.status(404).send({ error: 'Not found' });
+      return res.status(500).send({ error: 'Server error' });
     }
   }
 }
