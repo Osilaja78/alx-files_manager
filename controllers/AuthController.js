@@ -7,25 +7,25 @@ class AuthController {
   static async getConnect(req, res) {
     try {
       const authHeader = req.headers.authorization;
-      if (!authHeader || !authHeader.startsWith('Basic ')) return res.status(401).send('Unauthorized');
+      if (!authHeader || !authHeader.startsWith('Basic ')) return res.status(401).json({ error: 'Unauthorized' });
 
       const base64Credentials = authHeader.split(' ')[1];
       const credentials = Buffer.from(base64Credentials, 'base64').toString('ascii').split(':');
       const email = credentials[0];
       const password = credentials[1];
 
-      if (!email || !password) return res.status(401).send('Unauthorized');
+      if (!email || !password) return res.status(401).json({ error: 'Unauthorized' });
 
       const user = await dbClient.db.collection('users').findOne({ email });
       const hashedPassword = sha1(password);
-      if (user.password !== hashedPassword) return res.status(401).send('Unauthorized');
+      if (user.password !== hashedPassword) return res.status(401).json({ error: 'Unauthorized' });
 
       const token = uuidv4();
       await redisClient.set(`auth_${token}`, user._id.toString(), 60 * 60 * 24);
-      return res.status(200).send({ token });
+      return res.status(200).json({ token });
     } catch (err) {
       console.error('Error signing in:', err);
-      return res.status(500).send('Server error');
+      return res.status(500).json({ error: 'Server error' });
     }
   }
 
@@ -38,7 +38,7 @@ class AuthController {
       return res.status(204).send();
     } catch (err) {
       console.error('Error signing out:', err);
-      return res.status(500).send('Server error');
+      return res.status(500).json({ error: 'Server error' });
     }
   }
 }
